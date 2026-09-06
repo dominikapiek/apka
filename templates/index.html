@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-
-    <title>Mój Chatbot AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zapytaj AI</title>
 
     <link
         rel="stylesheet"
@@ -14,40 +14,45 @@
 
 <body>
 
-    <main class="container">
+<main class="container">
 
-        <h1>Zapytaj AI</h1>
+    <nav>
+    <a href="/">ZAPYTAJ AI</a>
+    <a href="/analiza-strona">ANALIZUJ DANE</a>
+</nav>
 
-        <form action="/zapytaj" method="POST">
+    <h1>Zapytaj AI</h1>
 
-            <textarea
-                name="pytanie"
-                id="pytanie"
-                rows="4"
-                placeholder="Wpisz swoje pytanie..."
-            ></textarea>
+    <form action="/zapytaj" method="POST">
 
-            <button type="submit">
-                Wyślij
-            </button>
+        <textarea
+            name="pytanie"
+            rows="5"
+            placeholder="Wpisz swoje pytanie..."
+            required
+        >{{ pytanie or "" }}</textarea>
 
-        </form>
+        <button type="submit">
+            Wyślij
+        </button>
 
-        <div class="answer-box">
+    </form>
 
-            {% if odpowiedz %}
+    {% if odpowiedz %}
 
-                <p>{{ odpowiedz }}</p>
+    <div class="answer-box">
 
-            {% else %}
+        <strong>Odpowiedź AI:</strong>
 
-                <p>Tutaj pojawi się odpowiedź AI.</p>
+        <p>
+            {{ odpowiedz }}
+        </p>
 
-            {% endif %}
+    </div>
 
-        </div>
+    {% endif %}
 
-    </main>
+</main>
 
 </body>
 

@@ -1,8 +1,7 @@
 import os
-
+import pandas as pd
 from flask import Flask, render_template, request
 from dotenv import load_dotenv
-
 from anthropic import (
     Anthropic,
     RateLimitError,
@@ -13,15 +12,13 @@ from anthropic import (
 
 load_dotenv()
 
-client = Anthropic(
-    api_key=os.environ.get("ANTHROPIC_API_KEY")
-)
+client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
-MODEL = "claude-haiku-5"
-
-MAX_TOKENS = 1024
+MODEL = "claude-haiku-4-5-20251001"
+MAX_TOKENS = 500
 
 app = Flask(__name__)
+
 
 def zapytaj_claude(tresc_pytania):
     try:
@@ -29,10 +26,7 @@ def zapytaj_claude(tresc_pytania):
             model=MODEL,
             max_tokens=MAX_TOKENS,
             messages=[
-                {
-                    "role": "user",
-                    "content": tresc_pytania
-                }
+                {"role": "user", "content": tresc_pytania}
             ],
         )
 
@@ -53,10 +47,7 @@ def zapytaj_claude(tresc_pytania):
 
 @app.route("/")
 def strona_glowna():
-    return render_template(
-        "index.html",
-        odpowiedz=None
-    )
+    return render_template("index.html", odpowiedz=None)
 
 
 @app.route("/zapytaj", methods=["POST"])
@@ -78,5 +69,69 @@ def zapytaj():
     )
 
 
+@app.route("/analiza-strona")
+def analiza_strona():
+    return render_template("analiza.html")
+
+
+@app.route("/analizuj", methods=["POST"])
+def analizuj():
+    plik = request.files.get("plik_csv")
+
+    if not plik or plik.filename == "":
+        return render_template(
+            "analiza.html",
+            blad="Nie wybrano pliku."
+        )
+
+    if not plik.filename.endswith(".csv"):
+        return render_template(
+            "analiza.html",
+            blad="Prześlij plik w formacie .csv."
+        )
+
+    try:
+        df = pd.read_csv(plik)
+    except Exception as e:
+        return render_template(
+            "analiza.html",
+            blad=f"Nie udało się wczytać pliku: {e}"
+        )
+
+    liczba_wierszy, liczba_kolumn = df.shape
+
+    podglad = df.head(5).to_string(index=False)
+
+    kolumny = ", ".join(df.columns.tolist())
+
+    prompt = f"""
+Mam plik CSV z danymi. Oto podstawowe informacje:
+
+- Liczba wierszy: {liczba_wierszy}
+- Liczba kolumn: {liczba_kolumn}
+- Nazwy kolumn: {kolumny}
+- Pierwsze 5 wierszy:
+{podglad}
+
+Napisz krótkie podsumowanie tych danych po polsku.
+Co to może być za zbiór danych?
+Co można z niego wyczytać?
+"""
+
+    podsumowanie = zapytaj_claude(prompt)
+
+    return render_template(
+        "analiza.html",
+        nazwa_pliku=plik.filename,
+        liczba_wierszy=liczba_wierszy,
+        liczba_kolumn=liczba_kolumn,
+        podsumowanie_ai=podsumowanie,
+    )
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(
+        host="127.0.0.1",
+        port=8080,
+        debug=True
+    )
